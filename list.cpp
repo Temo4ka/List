@@ -70,6 +70,7 @@ int listLogicInsert(List *list, size_t ind, Elem_t val, size_t *err) {
     *err = listVerify(list);
     if (*err) return 0;
     // TODO: enum for 0
+    if (list -> nextFree == list -> head) return ListIsEmpty;
     
     size_t prevPos = listGetPos(list, ind);
     if (prevPos == -1) return 0;
@@ -99,6 +100,9 @@ int listPhysInsert(List *list, size_t ind, Elem_t val, size_t *err) {
     if (*err) return 0;
     // TODO: enum for 0
     
+    if (list -> nextFree == list -> head) return ListIsEmpty;
+
+
     if (list -> data[ind] == -1) return 0;
     
     size_t  prevPos  =        ind          ;
@@ -124,6 +128,8 @@ int listLogicErase (List *list, size_t ind) {
 
     *err = listVerify(list);
     if (*err) return *err;
+
+    if (list -> next[list -> head] == list -> head) return ListIsEmpty;
 
     size_t curPos = listGetPos(ind);
     if (curPos == -1) return EXIT_FAILURE;
@@ -264,22 +270,26 @@ void printErrorMessage(int error) {
 
     size_t currentError = 1;
     if (error & (1 <<  0))
-        myfPrintf(LogFile,   "%zu)  Struct List was nullptr!\n"   , currentError++);
+        myfPrintf(LogFile, "%zu)  Struct List was nullptr!\n", currentError++);
     if (error & (1 <<  1))
-        myfPrintf(LogFile, "%zu)  Data in struct List was Null!\n", currentError++);
+        myfPrintf(LogFile, "%zu)  List is already full!\n", currentError++);
     if (error & (1 <<  2))
-        myfPrintf(LogFile, "%zu)  Next in struct List was Null!\n", currentError++);
+        myfPrintf(LogFile, "%zu)  List is already empty!\n", currentError++);
     if (error & (1 <<  3))
-        myfPrintf(LogFile, "%zu)  Prev in struct List was Null!\n", currentError++);
+        myfPrintf(LogFile, "%zu)  Data in struct List was Null!\n", currentError++);
     if (error & (1 <<  4))
-        myfPrintf(LogFile,   "%zu)  Struct List was inactive!\n"  , currentError++);
+        myfPrintf(LogFile, "%zu)  Next in struct List was Null!\n", currentError++);
     if (error & (1 <<  5))
-        myfPrintf(LogFile, "%zu)  Data in struct List was POISONED!\n", currentError++);
+        myfPrintf(LogFile, "%zu)  Prev in struct List was Null!\n", currentError++);
     if (error & (1 <<  6))
-        myfPrintf(LogFile, "%zu)  The System of free blocks is damaged in struct List\n", currentError++);
+        myfPrintf(LogFile, "%zu)  Struct List was inactive!\n", currentError++);
     if (error & (1 <<  7))
-        myfPrintf(LogFile, "%zu)  Struct List was Destructed two times!\n", currentError++);
+        myfPrintf(LogFile, "%zu)  Data in struct List was POISONED!\n", currentError++);
     if (error & (1 <<  8))
+        myfPrintf(LogFile, "%zu)  The System of free blocks is damaged in struct List\n", currentError++);
+    if (error & (1 <<  9))
+        myfPrintf(LogFile, "%zu)  Struct List was Destructed two times!\n", currentError++);
+    if (error & (1 << 10))
         myfPrintf(LogFile, "%zu)  Struct List was Constructed two times!\n", currentError++);
 }
 

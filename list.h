@@ -4,27 +4,23 @@
 const int MAX_LIST_SIZE = 1000;
 
 enum ListErrors {
-              ListOk         =       0,
-            ListIsNull       = 1 <<  1,
-          ListIsInActive     = 1 <<  2,
-          ListNullInData     = 1 <<  3,
-       ListDoubleDestruction = 1 <<  4,
-      ListDoubleConstruction = 1 <<  5,
-
+             ListIsOk        =       0,
+            ListIsNull       = 1 <<  0,
+            ListIsFull       = 1 <<  1   
+            ListIsEmpty      = 1 <<  2,
+          ListDataIsNull     = 1 <<  3,
+          ListNextIsNull     = 1 <<  4,
+          ListPrevIsNull     = 1 <<  5,
+          ListIsInActive     = 1 <<  6,
+         ListPoisonInData    = 1 <<  7,
+         ListFreeBlocksErr   = 1 <<  8,
+       ListDoubleDestruction = 1 <<  9,
+      ListDoubleConstruction = 1 << 10,
 };
 
 enum Status {
      Active = 0,
     InActive = 1
-}
-
-struct Error {
-    char *  name   = nullptr;
-    char *  file   = nullptr;
-    char * pointer = nullptr;
-    char * message = nullptr;
-    char *function = nullptr;
-    bool  status  =    0   ; 
 }
 
 struct listInfo
@@ -66,10 +62,16 @@ struct List {
 
 int _listCtor(List *list, const char * name, const char *file, const char *function, const size_t line);
 
-int _errorCtor(Error *list, const char * name, const char *file, const char *function, const size_t line);
+int listDtor(List *list);
 
-int _listDtor(List *list);
+int listLogicInsert(List *list, size_t ind, Elem_t val, size_t *err);
 
-int addData(List *list, Elem_t val, Error *err);
+int listPhysInsert (List *list, size_t ind, Elem_t val, size_t *err) ;
 
-int eraseData(List *list, size_t element);
+int listLogicErase (List *list, size_t ind);
+
+int listPhysErase  (List *list, size_t ind);
+
+int  listGetPos    (List *list, size_t ind);
+
+int  listVerify    (List *list);
