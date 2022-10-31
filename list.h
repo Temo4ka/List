@@ -5,20 +5,21 @@
 const int MAX_LIST_SIZE = 20;
 
 enum ListErrors {
-             ListIsOk        =       0,
-            ListIsNull       = 1 <<  0,
-            ListIsFull       = 1 <<  1, 
-            ListIsEmpty      = 1 <<  2,
-          ListHeadErase      = 1 <<  3,
-          ListDataIsNull     = 1 <<  4,
-          ListNextIsNull     = 1 <<  5,
-          ListWrongIndex     = 1 <<  6,
-          ListPrevIsNull     = 1 <<  7,
-          ListIsInActive     = 1 <<  8,
-         ListPoisonInData    = 1 <<  9,
-         ListFreeBlocksErr   = 1 << 10,
-       ListDoubleDestruction = 1 << 11,
-      ListDoubleConstruction = 1 << 12,
+             ListIsOk         =       0,
+            ListIsNull        = 1 <<  0,
+            ListIsFull        = 1 <<  1, 
+            ListIsEmpty       = 1 <<  2,
+          ListHeadErase       = 1 <<  3,
+          ListDataIsNull      = 1 <<  4,
+          ListNextIsNull      = 1 <<  5,
+          ListWrongIndex      = 1 <<  6,
+          ListPrevIsNull      = 1 <<  7,
+          ListIsInActive      = 1 <<  8,
+         ListPoisonInData     = 1 <<  9,
+         ListFreeBlocksErr    = 1 << 10,
+       ListDoubleDestruction  = 1 << 11,
+      ListDoubleConstruction  = 1 << 12,
+     ListGraphVizExecutionErr = 1 << 13,
 };
 
 enum Status {
@@ -93,6 +94,8 @@ void listDump_(List *list, const char* functionName, const char *fileName, size_
 
 void listLogClose() ;
 
-int listGraphVizLogicDump(List *list, const char *outFileName);
+int listGraphVizLogicDump(List *list, const char *outFile);
 
-int listGraphVizPhysDump (List *list, const char *outFileName);
+int listGraphVizPhysDump(List *list, const char *fileName, int cmd);
+
+void vizLogClose();

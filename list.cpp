@@ -3,17 +3,21 @@
 #include <cstdarg>
 
 //TODO: new List with struct
-//      PhysErase + PhysInsert
-//      PhysDump
+//      define Head and Tail
+//      PhysIns and PhysErase
+//      Better GraphViz
 
 #define TAIL list -> prev[0]
 #define HEAD list -> next[0]
 
-const size_t DUMP_SIZE = 20;
-const size_t FictElem  =  0;
-const  int   DataFree  = -1;
+const size_t   DUMP_SIZE  = 20;
+const size_t   FictElem   =  0;
+const size_t   DataFree   = -1;
+const size_t MAX_CMD_SIZE = 40;
 
-FILE *LogFile = fopen("logs.txt", "w");
+static FILE *LogGraph = fopen("logs/HtmlLog.html", "w");
+static FILE *LogFile  = LogGraph;
+
 
 int _listCtor(List *list, const char * name, const char *file, const char *function, size_t line) {
     catchNullptr(list);
@@ -75,10 +79,15 @@ int listLogicInsert(List *list, size_t ind, Elem_t val, int *err) {
     *err = listVerify(list);
     if (*err) return POISON;
 
-    if (list -> nextFree == list -> head) return ListIsEmpty;
-    
+    if (list -> nextFree == list -> head) { 
+        *err = ListIsEmpty;
+        return POISON;
+    }
+
     size_t prevPos = listGetPos(list, ind);
     if (prevPos == POISON) return POISON;
+
+    printf("______________\n");
     
     size_t   newPos  = list ->   nextFree  ; 
 
@@ -94,6 +103,8 @@ int listLogicInsert(List *list, size_t ind, Elem_t val, int *err) {
 
     if (newPos - list -> next[list -> head] + 1 != ind)
         list -> sweetLife = Bitter;
+
+     printf("%d\n", newPos);
 
     *err = listVerify(list);
     if (*err) return POISON;
@@ -169,7 +180,7 @@ int listLogicErase (List *list, size_t ind) {
     int err = listVerify(list);
     if (err) return err;
 
-    if (HEAD == TAIL) return ListIsEmpty;
+    if (HEAD == FictElem) return ListIsEmpty;
 
     size_t curPos = listGetPos(list, ind);
     if (curPos == POISON) return ListWrongIndex;
@@ -258,9 +269,10 @@ int listGetPos(List *list, size_t index) {
     if (list == nullptr) return POISON;
 
     if (list -> sweetLife) {
-        if (list -> prev[index] == DataFree)
+        size_t pos = index + HEAD;
+        if (list -> prev[pos] == DataFree)
             return POISON;
-        return index - HEAD + 1;
+        return pos;
     }
 
     size_t pos = list -> head;
@@ -348,7 +360,7 @@ int listVerify(List *list) {
 int listPrint(List *list) {
     catchNullptr(list);
 
-    fprintf(stderr, "-----\n");
+    // fprintf(stderr, "-----\n");
     for (size_t curElem = list -> next[list -> head]; curElem != list -> head; curElem = list -> next[curElem]) {
         printf("%zu -> %d\n", curElem, list -> data[curElem]);
     }
@@ -369,7 +381,7 @@ int listVerifyFree(List *list) {
     catchNullptr(list);
 
     for (size_t curPos = list -> nextFree; curPos; curPos = list -> next[curPos])
-        if (list -> prev[curPos] != DataFree) { printf("%zu\n", curPos); return ListFreeBlocksErr;}
+        if (list -> prev[curPos] != DataFree) { printf("%zu\n", list -> prev[curPos]); return ListFreeBlocksErr;}
 
     return ListIsOk;
 }
@@ -387,28 +399,28 @@ void myfPrintf(FILE *stream = nullptr, const char *format = nullptr, ...) {
 }
 
 void listDump_(List *list, const char* functionName, const char *fileName, size_t line) {
-    myfPrintf(LogFile, "%s at %s(%zu);\n", functionName, fileName, line);
-    myfPrintf(LogFile, "List[%08X] '%s' at '%s' at %s(%zu);\n{\n", list->info.pointer, list->info.name, list->info.function, list->info.file, list->info.line);
+    myfPrintf(LogFile, "\n%s at %s(%zu);<br>\n", functionName, fileName, line);
+    myfPrintf(LogFile, "List[%08X] '%s' at '%s' at %s(%zu);\n{<br>\n", list->info.pointer, list->info.name, list->info.function, list->info.file, list->info.line);
 
     for (size_t cur = 0; cur < DUMP_SIZE; ++cur) {
         myfPrintf(LogFile, "%03zu ", cur);
     }
-    myfPrintf(LogFile, "\n");
+    myfPrintf(LogFile, "\n<br>");
 
     for (size_t cur = 0; cur < DUMP_SIZE; ++cur) {
         myfPrintf(LogFile, "%03d ", list -> data[cur]);
     }
-    myfPrintf(LogFile, "\n");
+    myfPrintf(LogFile, "\n<br>");
 
     for (size_t cur = 0; cur < DUMP_SIZE; ++cur) {
         myfPrintf(LogFile, "%03d ", list -> next[cur]);
     }
-    myfPrintf(LogFile, "\n");
+    myfPrintf(LogFile, "\n<br>");
 
     for (size_t cur = 0; cur < DUMP_SIZE; ++cur) {
         myfPrintf(LogFile, "%03d ", list -> prev[cur]);
     }
-    myfPrintf(LogFile, "\n}\n");
+    myfPrintf(LogFile, "\n<br>}<br>\n");
 }
 
 int listGraphVizLogicDump(List *list, const char *outFileName) {
@@ -440,26 +452,26 @@ int listGraphVizLogicDump(List *list, const char *outFileName) {
 
     fprintf(stream, "   subgraph FreeNodes {\n"
                     "       node[shape = Mrecord, style = filled, fillcolor = lightblue];\n");
-    for (size_t curElem = list -> next[list -> nextFree]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = list -> nextFree; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "       l%zu[label = \" %zu "    "|"        "data: %d "    "|"    " next: %zu "   "|"    " prev: %d \"];\n",
                                 curElem,     curElem,        list -> data[curElem], list -> next[curElem], list -> prev[curElem]);
     }
     fprintf(stream, "   }\n");
 
     fprintf(stream, "   Head");  // Active edges [next]
-    for (size_t curElem = list -> next[list -> head]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = HEAD; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
     fprintf(stream, "->Head[style = \"bold\", color = \"darkgreen\"];\n");
 
     fprintf(stream, "   Head");  // Active edges [prev]
-    for (size_t curElem = list -> prev[list -> head]; curElem != list -> head; curElem = list -> prev[curElem]) {
+    for (size_t curElem = TAIL; curElem != list -> head; curElem = list -> prev[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
-    fprintf(stream, "->Head[style = \"dashed\", color = \"green\"];\n");
+    fprintf(stream, "->Head[style = \"dashed\", color = \"grey\"];\n");
 
     fprintf(stream, "   NextFree");  // Inactive(free) edges [next]
-    for (size_t curElem = list -> next[list -> nextFree]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = list -> nextFree; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
     fprintf(stream, "->NextFree[style = \"bold\", color = \"darkblue\"];\n"
@@ -471,11 +483,12 @@ int listGraphVizLogicDump(List *list, const char *outFileName) {
     return ListIsOk;
 }
 
-int listGraphVizPhysDump(List *list, const char *outFileName) {
-    catchNullptr(outFileName);
-    catchNullptr(   list    );
+int listGraphVizPhysDump(List *list, const char *fileName, int cmd) {
+    catchNullptr(fileName);
+    catchNullptr(  list  );
 
-    FILE *stream = fopen(outFileName, "w");
+    FILE *stream = fopen(fileName, "w");
+    catchNullptr(stream);
 
     fprintf(stream, "digraph List {\n"
                     "   rankdir = LR;\n");
@@ -500,37 +513,46 @@ int listGraphVizPhysDump(List *list, const char *outFileName) {
 
     fprintf(stream, "   subgraph FreeNodes {\n"
                     "       node[shape = Mrecord, style = filled, fillcolor = lightblue];\n");
-    for (size_t curElem = list -> next[list -> nextFree]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = list -> nextFree; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "       l%zu[label = \" %zu "    "|"        "data: %d "    "|"    " next: %zu "   "|"    " prev: %d \"];\n",
                                 curElem,     curElem,        list -> data[curElem], list -> next[curElem], list -> prev[curElem]);
     }
     fprintf(stream, "   }\n");
 
+    fprintf(stream, "   Head->NextFree");
     for (size_t curElem = 1; curElem < MAX_LIST_SIZE; ++curElem) {
-        fprintf(stream, "   l%zu;\n", curElem);
+        fprintf(stream, "->l%zu", curElem);
     }
+    fprintf(stream, "[style = invis, weigth = 100];\n");
     
     fprintf(stream, "   Head");  // Active edges [next]
-    for (size_t curElem = list -> next[list -> head]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = HEAD; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
-    fprintf(stream, "->Head[style = \"bold\", color = \"darkgreen\"];\n");
+    fprintf(stream, "->Head[weigth = 0, style = \"bold\", color = \"darkgreen\"];\n");
 
     fprintf(stream, "   Head");  // Active edges [prev]
-    for (size_t curElem = list -> prev[list -> head]; curElem != list -> head; curElem = list -> prev[curElem]) {
+    for (size_t curElem = TAIL; curElem != list -> head; curElem = list -> prev[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
-    fprintf(stream, "->Head[style = \"dashed\", color = \"green\"];\n");
+    fprintf(stream, "->Head[weigth = 0, style = \"dashed\", color = \"green\"];\n");
 
     fprintf(stream, "   NextFree");  // Inactive(free) edges [next]
-    for (size_t curElem = list -> next[list -> nextFree]; curElem != list -> head; curElem = list -> next[curElem]) {
+    for (size_t curElem = list -> nextFree; curElem != list -> head; curElem = list -> next[curElem]) {
         fprintf(stream, "->l%zu", curElem);
     }
-    fprintf(stream, "->NextFree[style = \"bold\", color = \"darkblue\"];\n"
+    fprintf(stream, "->NextFree[weight = 0, style = \"bold\", color = \"purple\"];\n"
                     "}\n");
 
-
     fclose(stream);
+
+    char CmdBuffer[MAX_CMD_SIZE] = {0};
+    sprintf(CmdBuffer, "dot -Tpng %s -o logs/logPic%zu.png", fileName, cmd);
+
+    if (system(CmdBuffer)) return ListGraphVizExecutionErr;
+
+    fprintf(LogGraph, "<center>\n<h1>\nCommand[%zu]\n</h1>\n</center>\n", cmd);
+    fprintf(LogGraph, "<img src= logPic%zu.png />\n", cmd);
 
     return ListIsOk;
 }
@@ -574,9 +596,15 @@ void printErrorMessage(int error) {
         myfPrintf(LogFile, "%zu)  Struct List was Destructed two times!\n", currentError++);
     if (error & (1 << 12))
         myfPrintf(LogFile, "%zu)  Struct List was Constructed two times!\n", currentError++);
+    if (error & (1 << 13))
+        myfPrintf(LogFile, "%zu)  GraphViz execution error!\n", currentError++);
 }
 
 void listLogClose() {
     if (LogFile != nullptr)
         fclose(LogFile);
+}
+
+void vizLogClose() {
+    fclose(LogGraph);
 }
